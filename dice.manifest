@@ -1,0 +1,9 @@
+CACHE MANIFEST
+# Version 1.1
+CACHE:
+data/bg.jpg
+data/normal.png
+data/texture.png
+data/sound.wav
+data/dice_vertex.js
+data/dice_texcoord.js
