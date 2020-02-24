@@ -129,7 +129,7 @@ function update(){
 		rotation.x+=L.x*t*1.5;
 		rotation.y+=L.y*t*1.5;
 		rotation.z+=L.z*t*1.5;
-		
+
 		position.x+=velocity.x*t;
 		position.y+=velocity.y*t;
 		position.z+=velocity.z*t;
@@ -149,6 +149,7 @@ function dataCompare(a,b){
 	return Math.sqrt(dif2);
 }
 function render(g){
+	if (loadedImages < 3)return
 	var data={position:{x:position.x,y:position.y,z:position.z},matrix:matrix};
 	if(prevData!=null&&dataCompare(data,prevData)<0.002)return;
 	prevData=data;
@@ -216,7 +217,7 @@ function makeBGObject(gl){
 	var tx=x/(MIN/S),ty=y/(MIN/S);
 	var vertex=[],texcoord=[];
 	vertex.push(-x,-y,0,x,-y,0,x,y,0,-x,-y,0,x,y,0,-x,y,0);
-	
+
 	gl.bindBuffer(gl.ARRAY_BUFFER,obj.vertex);
 	gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertex),gl.STATIC_DRAW);
 	gl.bindBuffer(gl.ARRAY_BUFFER,null);
@@ -224,9 +225,10 @@ function makeBGObject(gl){
 	obj.length=6;
 	var img=new Image();
 	img.src="data/bg.jpg";
-	img.onload=function(){loadTexture(img,obj.texture);}
+	img.onload=function(){loadedImages++;loadTexture(img,obj.texture);}
 	return obj;
 }
+var loadedImages = 0;
 function makeCubeObject(gl){
 	var obj={}
 	obj.vertex=gl.createBuffer();
@@ -242,8 +244,8 @@ function makeCubeObject(gl){
 	var nimg=new Image(),timg=new Image();
 	nimg.src="data/normal.png";
 	timg.src="data/texture.png";
-	nimg.onload=function(){loadTexture(nimg,obj.normalTexture);}
-	timg.onload=function(){loadTexture(timg,obj.colorTexture);}
+	nimg.onload=function(){loadedImages++;console.log('n');loadTexture(nimg,obj.normalTexture);}
+	timg.onload=function(){loadedImages++;console.log('c');loadTexture(timg,obj.colorTexture);}
 	return obj;
 }
 
@@ -259,14 +261,14 @@ frustum=makeFrustumMatrix(W/S/64,H/S/64,(DEPTH/S-2*7/8)/64,DEPTH/S+1);
 function renderObj(gl,shader,obj,frustum,matrix,position){
 	gl.clearColor(0,0,0,1)
 	gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-	
+
 	var light={x:1,y:2,z:5};
 	var lr=Math.sqrt(dot(light,light));
 	light.x/=lr;light.y/=lr;light.z/=lr;
-	
+
 	var farr=[];for(var i=0;i<4;i++)farr=farr.concat(frustum[i]);
 	var marr=[];for(var i=0;i<3;i++)for(var j=0;j<3;j++)marr.push(matrix[j][i]);
-	
+
 	gl.disable(gl.DEPTH_TEST);
 	gl.useProgram(bgShader);
 	gl.uniformMatrix4fv(bgShader.uniform.projection,false,new Float32Array(farr));
@@ -278,7 +280,7 @@ function renderObj(gl,shader,obj,frustum,matrix,position){
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D,bgobj.texture);
 	gl.drawArrays(gl.TRIANGLES,0,bgobj.length);
-	
+
 
 	gl.useProgram(shadowShader);
 	gl.uniformMatrix4fv(shadowShader.uniform.projection,false,new Float32Array(farr));
@@ -287,7 +289,7 @@ function renderObj(gl,shader,obj,frustum,matrix,position){
 	gl.uniform3f(shadowShader.uniform.position,position.x,position.y,position.z);
 	gl.uniform1f(shadowShader.uniform.depth,-DEPTH/S);
 	gl.uniform3f(shadowShader.uniform.light,light.x,light.y,light.z);
-	
+
 	gl.enableVertexAttribArray(shadowShader.attribute.vertex);
 	gl.bindBuffer(gl.ARRAY_BUFFER,cube.vertex);
 	gl.vertexAttribPointer(shadowShader.attribute.vertex,3,gl.FLOAT,false,0,0);
@@ -298,8 +300,8 @@ function renderObj(gl,shader,obj,frustum,matrix,position){
 	gl.drawArrays(gl.TRIANGLES,0,cube.length);
 	gl.disable(gl.BLEND);
 	gl.enable(gl.DEPTH_TEST);
-	
-	
+
+
 	gl.useProgram(shader);
 	gl.uniformMatrix4fv(shader.uniform.projection,false,new Float32Array(farr));
 	gl.uniformMatrix3fv(shader.uniform.matrix,false,new Float32Array(marr));
@@ -316,15 +318,15 @@ function renderObj(gl,shader,obj,frustum,matrix,position){
 	gl.bindTexture(gl.TEXTURE_2D,cube.colorTexture);
 	gl.activeTexture(gl.TEXTURE1);
 	gl.bindTexture(gl.TEXTURE_2D,cube.normalTexture);
-	
+
 	gl.enableVertexAttribArray(shader.attribute.vertex);
 	gl.bindBuffer(gl.ARRAY_BUFFER,cube.vertex);
 	gl.vertexAttribPointer(shader.attribute.vertex,3,gl.FLOAT,false,0,0);
-	
+
 	gl.enableVertexAttribArray(shader.attribute.texcoord);
 	gl.bindBuffer(gl.ARRAY_BUFFER,cube.texcoord);
 	gl.vertexAttribPointer(shader.attribute.texcoord,2,gl.FLOAT,false,0,0);
-	
+
 	gl.drawArrays(gl.TRIANGLES,0,cube.length);
 }
 function createShaderProgram(gl,vid,fid){
@@ -353,7 +355,7 @@ function createShaderProgram(gl,vid,fid){
 	gl.attachShader(program,vshader);
 	gl.attachShader(program,fshader);
 	gl.linkProgram(program);
-	
+
 	if(!gl.getProgramParameter(program,gl.LINK_STATUS)){
 		console.log("Error in program linking:"+gl.getProgramInfoLog(program));
 		if(vshader)gl.deleteShader(vshader);
